@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow – Team Task Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --border: #2a2a35;
+    --border2: #3a3a48;
+    --text: #f0f0f5;
+    --text2: #9090a8;
+    --text3: #5a5a72;
+    --accent: #6c63ff;
+    --accent2: #9d96ff;
+    --accent-glow: rgba(108, 99, 255, 0.25);
+    --green: #22d3a0;
+    --yellow: #f5c842;
+    --red: #ff5c7a;
+    --orange: #ff8c42;
+    --blue: #42b4ff;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* ── SCROLLBAR ─────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── LAYOUT ───────────────────────── */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  .sidebar {
+    width: 240px; min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent2); }
+
+  .nav-section { padding: 16px 12px 8px; }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: var(--text3); text-transform: uppercase; padding: 0 8px 8px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    color: var(--text2); font-size: 13.5px; font-weight: 500;
+    transition: all 0.15s; border: 1px solid transparent;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--accent-glow); border-color: rgba(108,99,255,0.3); color: var(--accent2); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-item .badge {
+    margin-left: auto; background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px; min-width: 18px; text-align: center;
+  }
+
+  .sidebar-footer {
+    margin-top: auto; padding: 16px; border-top: 1px solid var(--border);
+  }
+  .user-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 10px; background: var(--bg3);
+    cursor: pointer;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-info .name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-info .role { font-size: 11px; color: var(--text3); }
+
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .topbar {
+    padding: 20px 28px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar h2 { font-size: 20px; font-weight: 800; flex: 1; }
+  .topbar .sub { color: var(--text3); font-size: 13px; font-weight: 400; }
+
+  .content { padding: 24px 28px; flex: 1; }
+
+  /* ── BUTTONS ──────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #7c75ff; box-shadow: 0 0 20px var(--accent-glow); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: rgba(255,92,122,0.15); color: var(--red); border: 1px solid rgba(255,92,122,0.3); }
+  .btn-danger:hover { background: rgba(255,92,122,0.25); }
+  .btn-ghost { background: transparent; color: var(--text2); padding: 6px 10px; }
+  .btn-ghost:hover { color: var(--text); background: var(--bg3); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── CARDS ────────────────────────── */
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .card:hover { border-color: var(--border2); }
+
+  /* ── STATS GRID ───────────────────── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.purple::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card .stat-val { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .stat-card .stat-label { font-size: 12px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .stat-icon { position: absolute; right: 16px; top: 16px; font-size: 22px; opacity: 0.3; }
+
+  /* ── GRID LAYOUTS ─────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ── PROJECT CARDS ────────────────── */
+  .project-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .project-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.15); }
+  .project-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .project-card .desc { color: var(--text2); font-size: 13px; margin-bottom: 16px; min-height: 36px; }
+  .project-meta { display: flex; align-items: center; gap: 16px; }
+  .project-meta .meta-item { display: flex; align-items: center; gap: 5px; color: var(--text3); font-size: 12px; }
+  .project-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), #a855f7); }
+
+  /* ── TASK LIST ────────────────────── */
+  .task-item {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+    margin-bottom: 8px; transition: all 0.15s; cursor: pointer;
+  }
+  .task-item:hover { border-color: var(--border2); background: var(--bg3); }
+
+  .task-check {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--border2); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .task-check.done { background: var(--green); border-color: var(--green); }
+  .task-check.in_progress { background: var(--blue); border-color: var(--blue); }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-title { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-title.done { text-decoration: line-through; color: var(--text3); }
+  .task-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .task-meta { display: flex; align-items: center; gap: 8px; }
+
+  /* ── BADGES / CHIPS ───────────────── */
+  .chip {
+    display: inline-flex; align-items: center; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .chip-todo { background: rgba(90,90,114,0.3); color: var(--text3); }
+  .chip-in_progress { background: rgba(66,180,255,0.15); color: var(--blue); }
+  .chip-review { background: rgba(245,200,66,0.15); color: var(--yellow); }
+  .chip-done { background: rgba(34,211,160,0.15); color: var(--green); }
+  .chip-high { background: rgba(255,92,122,0.15); color: var(--red); }
+  .chip-medium { background: rgba(245,200,66,0.15); color: var(--yellow); }
+  .chip-low { background: rgba(34,211,160,0.15); color: var(--green); }
+  .chip-admin { background: rgba(108,99,255,0.2); color: var(--accent2); }
+  .chip-member { background: rgba(66,180,255,0.1); color: var(--blue); }
+
+  /* ── FORMS / MODAL ────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px;
+    padding: 28px; width: 100%; max-width: 480px;
+    animation: modalIn 0.2s ease;
+  }
+  .modal-lg { max-width: 640px; }
+  @keyframes modalIn { from { opacity:0; transform: scale(0.95) translateY(-10px); } to { opacity:1; transform: scale(1); } }
+  .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px;
+    font-family: 'DM Sans', sans-serif; transition: border-color 0.15s; outline: none;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group select option { background: var(--bg3); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ── AUTH PAGE ────────────────────── */
+  .auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.08) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.06) 0%, transparent 50%);
+  }
+  .auth-box {
+    width: 100%; max-width: 400px; padding: 20px;
+  }
+  .auth-logo { text-align: center; margin-bottom: 32px; }
+  .auth-logo .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+  .auth-logo h1 { font-size: 28px; font-weight: 800; }
+  .auth-logo p { color: var(--text3); margin-top: 4px; }
+  .auth-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 32px;
+  }
+  .auth-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--bg3); padding: 4px; border-radius: 8px; }
+  .auth-tab {
+    flex: 1; padding: 8px; text-align: center; border-radius: 6px; cursor: pointer;
+    font-weight: 600; font-size: 13px; color: var(--text2); transition: all 0.15s;
+  }
+  .auth-tab.active { background: var(--accent); color: #fff; }
+  .auth-error {
+    background: rgba(255,92,122,0.1); border: 1px solid rgba(255,92,122,0.3);
+    color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+  }
+
+  /* ── TABLE ────────────────────────── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+
+  /* ── MISC ─────────────────────────── */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-state .icon { font-size: 40px; display: block; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; }
+
+  .loading { display: flex; align-items: center; justify-content: center; padding: 40px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .alert-error { background: rgba(255,92,122,0.1); border: 1px solid rgba(255,92,122,0.2); color: var(--red); }
+  .alert-success { background: rgba(34,211,160,0.1); border: 1px solid rgba(34,211,160,0.2); color: var(--green); }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .justify-between { justify-content: space-between; }
+  .ml-auto { margin-left: auto; }
+  .mb-4 { margin-bottom: 16px; }
+  .mb-6 { margin-bottom: 24px; }
+  .text-sm { font-size: 12px; }
+  .text-muted { color: var(--text3); }
+  .font-bold { font-weight: 700; }
+  .overdue { color: var(--red) !important; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-header h3 { font-size: 15px; font-weight: 700; }
+
+  .project-header {
+    display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;
+    padding-bottom: 20px; border-bottom: 1px solid var(--border);
+  }
+  .project-header h2 { font-size: 22px; font-weight: 800; }
+  .project-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg2); padding: 4px; border-radius: 10px; display: inline-flex; }
+  .tab { padding: 7px 16px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text2); transition: all 0.15s; }
+  .tab.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+
+  .status-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
+  .filter-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 12px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 2px; transition: width 0.3s; }
+
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .member-row:last-child { border-bottom: none; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+    .topbar { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback, createContext, useContext } = React;
+
+// ── API ────────────────────────────────────────────────────────────────────────
+const API = {
+  base: '/api',
+  token: () => localStorage.getItem('tf_token'),
+  headers() { return { 'Content-Type':'application/json', Authorization:`Bearer ${this.token()}` }; },
+  async req(method, path, body) {
+    const res = await fetch(this.base + path, { method, headers: this.headers(), body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  },
+  get: (p) => API.req('GET', p),
+  post: (p, b) => API.req('POST', p, b),
+  put: (p, b) => API.req('PUT', p, b),
+  patch: (p, b) => API.req('PATCH', p, b),
+  del: (p) => API.req('DELETE', p),
+};
+
+// ── CONTEXT ────────────────────────────────────────────────────────────────────
+const AppCtx = createContext(null);
+function useApp() { return useContext(AppCtx); }
+
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+const initials = (name='') => name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+const fmtDate = (d) => { if(!d) return '—'; const dt = new Date(d); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); };
+const isOverdue = (d, status) => d && status !== 'done' && new Date(d) < new Date();
+const STATUSES = ['todo','in_progress','review','done'];
+const STATUS_LABELS = { todo:'To Do', in_progress:'In Progress', review:'Review', done:'Done' };
+const PRIORITIES = ['low','medium','high'];
+
+// ── AUTH PAGE ──────────────────────────────────────────────────────────────────
+function AuthPage({ onLogin }) {
+  const [tab, setTab] = useState('login');
+  const [form, setForm] = useState({ name:'', email:'', password:'' });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handle = (k) => (e) => setForm(f => ({...f, [k]: e.target.value}));
+
+  const submit = async () => {
+    setErr(''); setLoading(true);
+    try {
+      const endpoint = tab === 'login' ? '/auth/login' : '/auth/signup';
+      const body = tab === 'login' ? { email: form.email, password: form.password } : form;
+      const data = await API.post(endpoint, body);
+      localStorage.setItem('tf_token', data.token);
+      onLogin(data.user);
+    } catch(e) { setErr(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-box">
+        <div className="auth-logo">
+          <span className="icon">⚡</span>
+          <h1>TaskFlow</h1>
+          <p>Team productivity, simplified</p>
+        </div>
+        <div className="auth-card">
+          <div className="auth-tabs">
+            {['login','signup'].map(t => (
+              <div key={t} className={`auth-tab ${tab===t?'active':''}`} onClick={()=>{setTab(t);setErr('');}}>
+                {t==='login'?'Sign In':'Sign Up'}
+              </div>
+            ))}
+          </div>
+          {err && <div className="auth-error">⚠️ {err}</div>}
+          {tab === 'signup' && (
+            <div className="form-group">
+              <label>Full Name</label>
+              <input value={form.name} onChange={handle('name')} placeholder="John Doe" onKeyDown={e=>e.key==='Enter'&&submit()} />
+            </div>
+          )}
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={form.email} onChange={handle('email')} placeholder="you@example.com" onKeyDown={e=>e.key==='Enter'&&submit()} />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" value={form.password} onChange={handle('password')} placeholder="••••••••" onKeyDown={e=>e.key==='Enter'&&submit()} />
+          </div>
+          {tab==='signup' && <p style={{fontSize:'11px',color:'var(--text3)',marginBottom:'16px'}}>💡 First user automatically becomes Admin</p>}
+          <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={submit} disabled={loading}>
+            {loading ? '...' : (tab==='login' ? 'Sign In' : 'Create Account')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────────
+function Sidebar({ page, setPage, user, projects, logout }) {
+  return (
+    <div className="sidebar">
+      <div className="logo">
+        <div className="logo-icon">⚡</div>
+        <h1>Task<span>Flow</span></h1>
+      </div>
+      <div className="nav-section">
+        <div className="nav-label">Main</div>
+        {[
+          { id:'dashboard', icon:'📊', label:'Dashboard' },
+          { id:'projects', icon:'📁', label:'Projects' },
+          { id:'my-tasks', icon:'✅', label:'My Tasks' },
+        ].map(n => (
+          <div key={n.id} className={`nav-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)}>
+            <span className="icon">{n.icon}</span> {n.label}
+          </div>
+        ))}
+      </div>
+      {user.role === 'admin' && (
+        <div className="nav-section">
+          <div className="nav-label">Admin</div>
+          <div className={`nav-item ${page==='users'?'active':''}`} onClick={()=>setPage('users')}>
+            <span className="icon">👥</span> Manage Users
+          </div>
+        </div>
+      )}
+      {projects.length > 0 && (
+        <div className="nav-section">
+          <div className="nav-label">Recent Projects</div>
+          {projects.slice(0,5).map(p => (
+            <div key={p.id} className={`nav-item`} onClick={()=>setPage(`project:${p.id}`)}>
+              <span className="icon">◆</span>
+              <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="sidebar-footer">
+        <div className="user-card" onClick={logout}>
+          <div className="user-avatar">{initials(user.name)}</div>
+          <div className="user-info">
+            <div className="name">{user.name}</div>
+            <div className="role">{user.role} · logout</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────────
+function Dashboard({ user }) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => { API.get('/dashboard').then(setStats).catch(console.error); }, []);
+
+  if (!stats) return <div className="loading"><div className="spinner"/></div>;
+
+  const statusMap = {};
+  (stats.tasks_by_status||[]).forEach(s => statusMap[s.status] = s.count);
+  const total = Object.values(statusMap).reduce((a,b)=>a+b,0);
+
+  return (
+    <div className="content">
+      <div className="stats-grid">
+        {user.role === 'admin' ? <>
+          <div className="stat-card purple"><span className="stat-icon">📁</span><div className="stat-val">{stats.total_projects||0}</div><div className="stat-label">Total Projects</div></div>
+          <div className="stat-card green"><span className="stat-icon">👥</span><div className="stat-val">{stats.total_users||0}</div><div className="stat-label">Total Users</div></div>
+          <div className="stat-card yellow"><span className="stat-icon">📋</span><div className="stat-val">{stats.total_tasks||0}</div><div className="stat-label">Total Tasks</div></div>
+          <div className="stat-card red"><span className="stat-icon">⚠️</span><div className="stat-val">{(stats.overdue_tasks||[]).length}</div><div className="stat-label">Overdue</div></div>
+        </> : <>
+          <div className="stat-card purple"><span className="stat-icon">📁</span><div className="stat-val">{stats.my_projects||0}</div><div className="stat-label">My Projects</div></div>
+          <div className="stat-card green"><span className="stat-icon">✅</span><div className="stat-val">{statusMap['done']||0}</div><div className="stat-label">Completed</div></div>
+          <div className="stat-card yellow"><span className="stat-icon">🔄</span><div className="stat-val">{statusMap['in_progress']||0}</div><div className="stat-label">In Progress</div></div>
+          <div className="stat-card red"><span className="stat-icon">⚠️</span><div className="stat-val">{(stats.overdue_tasks||[]).length}</div><div className="stat-label">Overdue</div></div>
+        </>}
+      </div>
+
+      <div className="grid-2" style={{gap:'20px'}}>
+        <div className="card">
+          <div className="section-header"><h3>Task Status Breakdown</h3></div>
+          {STATUSES.map(s => {
+            const cnt = statusMap[s]||0;
+            const pct = total ? Math.round(cnt/total*100) : 0;
+            return (
+              <div key={s} style={{marginBottom:'12px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
+                  <span><span className={`chip chip-${s}`}>{STATUS_LABELS[s]}</span></span>
+                  <span style={{fontSize:'12px',color:'var(--text3)'}}>{cnt} ({pct}%)</span>
+                </div>
+                <div className="progress-bar"><div className="progress-fill" style={{width:`${pct}%`}}/></div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="card">
+          <div className="section-header"><h3>⚠️ Overdue Tasks</h3></div>
+          {(stats.overdue_tasks||[]).length === 0
+            ? <div style={{color:'var(--text3)',fontSize:'13px',textAlign:'center',padding:'20px'}}>🎉 No overdue tasks!</div>
+            : (stats.overdue_tasks||[]).map(t => (
+                <div key={t.id} style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+                  <div style={{fontWeight:600,fontSize:'13px'}} className="overdue">{t.title}</div>
+                  <div style={{fontSize:'11px',color:'var(--text3)',marginTop:'2px'}}>{t.project_name} · Due {fmtDate(t.due_date)}</div>
+                </div>
+              ))
+          }
+        </div>
+      </div>
+
+      <div className="card" style={{marginTop:'20px'}}>
+        <div className="section-header"><h3>Recent Activity</h3></div>
+        {(stats.recent_tasks||[]).length === 0
+          ? <div style={{color:'var(--text3)',fontSize:'13px'}}>No recent tasks</div>
+          : (stats.recent_tasks||[]).map(t => (
+              <div key={t.id} className="task-item" style={{cursor:'default'}}>
+                <div className={`task-check ${t.status==='done'?'done':t.status==='in_progress'?'in_progress':''}`}>
+                  {t.status==='done' && '✓'}
+                </div>
+                <div className="task-info">
+                  <div className={`task-title ${t.status==='done'?'done':''}`}>{t.title}</div>
+                  <div className="task-sub">{t.project_name}{t.assigned_to_name ? ` · ${t.assigned_to_name}` : ''}</div>
+                </div>
+                <div className="task-meta">
+                  <span className={`chip chip-${t.status}`}>{STATUS_LABELS[t.status]}</span>
+                  <span className={`chip chip-${t.priority}`}>{t.priority}</span>
+                </div>
+              </div>
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// ── PROJECTS LIST ──────────────────────────────────────────────────────────────
+function ProjectsList({ user, setPage, refreshProjects, projects, loading }) {
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ name:'', description:'' });
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { reloadProjects } = useApp();
+
+  const createProject = async () => {
+    if (!form.name.trim()) { setErr('Project name required'); return; }
+    setSaving(true); setErr('');
+    try {
+      await API.post('/projects', form);
+      setShowNew(false); setForm({ name:'', description:'' });
+      reloadProjects();
+    } catch(e) { setErr(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="content">
+      <div className="section-header mb-4">
+        <div>
+          <h3 style={{fontSize:'15px',color:'var(--text3)',fontWeight:500}}>
+            {projects.length} project{projects.length!==1?'s':''}
+          </h3>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowNew(true)}>＋ New Project</button>
+      </div>
+
+      {loading && <div className="loading"><div className="spinner"/></div>}
+
+      {!loading && projects.length === 0 && (
+        <div className="empty-state">
+          <span className="icon">📁</span>
+          <h3>No projects yet</h3>
+          <p>Create your first project to get started</p>
+        </div>
+      )}
+
+      <div className="grid-3">
+        {projects.map(p => {
+          const done = 0; // simplified
+          return (
+            <div key={p.id} className="project-card" onClick={()=>setPage(`project:${p.id}`)}>
+              <div className="project-accent"/>
+              <h3>{p.name}</h3>
+              <p className="desc">{p.description || 'No description'}</p>
+              <div className="project-meta">
+                <div className="meta-item">👥 {p.member_count}</div>
+                <div className="meta-item">📋 {p.task_count}</div>
+                <div className="meta-item" style={{marginLeft:'auto'}}>
+                  <span className="chip chip-admin" style={{fontSize:'10px'}}>{p.my_role||'admin'}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {showNew && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowNew(false)}>
+          <div className="modal">
+            <h3>Create New Project</h3>
+            {err && <div className="alert alert-error">{err}</div>}
+            <div className="form-group">
+              <label>Project Name *</label>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Marketing Campaign Q3" autoFocus />
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="What is this project about?" rows={3}/>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setShowNew(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={createProject} disabled={saving}>
+                {saving?'Creating...':'Create Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── PROJECT DETAIL ─────────────────────────────────────────────────────────────
+function ProjectDetail({ projectId, user, setPage }) {
+  const [project, setProject] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [tab, setTab] = useState('tasks');
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [showTask, setShowTask] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [editTask, setEditTask] = useState(null);
+  const [err, setErr] = useState('');
+  const { reloadProjects } = useApp();
+
+  const load = useCallback(async () => {
+    try {
+      const [p, t, m, u] = await Promise.all([
+        API.get(`/projects/${projectId}`),
+        API.get(`/projects/${projectId}/tasks`),
+        API.get(`/projects/${projectId}/members`),
+        API.get('/users'),
+      ]);
+      setProject(p); setTasks(t); setMembers(m); setAllUsers(u);
+    } catch(e) { setErr(e.message); }
+    setLoading(false);
+  }, [projectId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const myRole = project?.my_role || (user.role === 'admin' ? 'admin' : 'member');
+  const canAdmin = myRole === 'admin' || user.role === 'admin';
+
+  const filtered = filter === 'all' ? tasks : tasks.filter(t => t.status === filter);
+
+  const delTask = async (id) => {
+    if (!confirm('Delete this task?')) return;
+    await API.del(`/projects/${projectId}/tasks/${id}`);
+    setTasks(ts => ts.filter(t => t.id !== id));
+  };
+
+  const changeStatus = async (task, status) => {
+    await API.put(`/projects/${projectId}/tasks/${task.id}`, { status });
+    setTasks(ts => ts.map(t => t.id===task.id ? {...t, status} : t));
+  };
+
+  const removeMember = async (uid) => {
+    if (!confirm('Remove this member?')) return;
+    await API.del(`/projects/${projectId}/members/${uid}`);
+    setMembers(m => m.filter(x => x.id !== uid));
+  };
+
+  const delProject = async () => {
+    if (!confirm('Delete this project and all its tasks?')) return;
+    await API.del(`/projects/${projectId}`);
+    reloadProjects();
+    setPage('projects');
+  };
+
+  if (loading) return <div className="loading"><div className="spinner"/></div>;
+  if (!project) return <div className="content"><div className="alert alert-error">{err || 'Project not found'}</div></div>;
+
+  const taskCounts = {};
+  STATUSES.forEach(s => taskCounts[s] = tasks.filter(t=>t.status===s).length);
+
+  return (
+    <div className="content">
+      <div className="project-header">
+        <div style={{flex:1}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setPage('projects')} style={{marginBottom:'8px'}}>← Projects</button>
+          <h2>{project.name}</h2>
+          {project.description && <p>{project.description}</p>}
+          <div style={{display:'flex',gap:'16px',marginTop:'8px'}}>
+            {STATUSES.map(s => (
+              <span key={s} style={{fontSize:'12px',color:'var(--text3)'}}>
+                <span className={`chip chip-${s}`}>{STATUS_LABELS[s]}</span> {taskCounts[s]||0}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:'8px',alignItems:'flex-start'}}>
+          {canAdmin && <button className="btn btn-primary btn-sm" onClick={()=>setShowTask(true)}>＋ Add Task</button>}
+          {canAdmin && <button className="btn btn-danger btn-sm" onClick={delProject}>🗑 Delete</button>}
+        </div>
+      </div>
+
+      <div className="tabs">
+        {['tasks','members'].map(t => (
+          <div key={t} className={`tab ${tab===t?'active':''}`} onClick={()=>setTab(t)}>
+            {t==='tasks'?`Tasks (${tasks.length})`:`Members (${members.length})`}
+          </div>
+        ))}
+      </div>
+
+      {tab === 'tasks' && (
+        <>
+          <div className="status-filter">
+            {['all',...STATUSES].map(s => (
+              <button key={s} className={`filter-btn ${filter===s?'active':''}`} onClick={()=>setFilter(s)}>
+                {s==='all'?'All':STATUS_LABELS[s]}
+                <span style={{marginLeft:'4px',opacity:0.7}}>{s==='all'?tasks.length:taskCounts[s]||0}</span>
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0
+            ? <div className="empty-state"><span className="icon">✅</span><h3>No tasks {filter!=='all'?`with status "${STATUS_LABELS[filter]}"`:''}</h3></div>
+            : filtered.map(task => (
+                <div key={task.id} className="task-item" onClick={()=>{setEditTask(task);}}>
+                  <div className={`task-check ${task.status==='done'?'done':task.status==='in_progress'?'in_progress':''}`}
+                    onClick={e=>{e.stopPropagation(); const ns = task.status==='done'?'todo':'done'; changeStatus(task,ns);}}>
+                    {task.status==='done' && '✓'}
+                  </div>
+                  <div className="task-info">
+                    <div className={`task-title ${task.status==='done'?'done':''}`}>{task.title}</div>
+                    <div className="task-sub">
+                      {task.assigned_to_name ? `👤 ${task.assigned_to_name}` : 'Unassigned'}
+                      {task.due_date && <span className={isOverdue(task.due_date,task.status)?'overdue':''}> · 📅 {fmtDate(task.due_date)}</span>}
+                    </div>
+                  </div>
+                  <div className="task-meta">
+                    <span className={`chip chip-${task.priority}`}>{task.priority}</span>
+                    <span className={`chip chip-${task.status}`}>{STATUS_LABELS[task.status]}</span>
+                    {canAdmin && (
+                      <button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();delTask(task.id);}} style={{padding:'4px 8px',color:'var(--red)'}}>✕</button>
+                    )}
+                  </div>
+                </div>
+              ))
+          }
+        </>
+      )}
+
+      {tab === 'members' && (
+        <div className="card">
+          {canAdmin && (
+            <div style={{marginBottom:'16px'}}>
+              <button className="btn btn-primary btn-sm" onClick={()=>setShowAddMember(true)}>＋ Add Member</button>
+            </div>
+          )}
+          {members.map(m => (
+            <div key={m.id} className="member-row">
+              <div className="user-avatar" style={{width:'36px',height:'36px',fontSize:'14px'}}>{initials(m.name)}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:'13.5px'}}>{m.name}</div>
+                <div style={{fontSize:'12px',color:'var(--text3)'}}>{m.email}</div>
+              </div>
+              <span className={`chip chip-${m.project_role}`}>{m.project_role}</span>
+              {canAdmin && m.id !== user.id && (
+                <button className="btn btn-ghost btn-sm" onClick={()=>removeMember(m.id)} style={{color:'var(--red)'}}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(showTask || editTask) && (
+        <TaskModal
+          task={editTask}
+          projectId={projectId}
+          members={members}
+          canAdmin={canAdmin}
+          onClose={()=>{setShowTask(false);setEditTask(null);}}
+          onSaved={load}
+        />
+      )}
+
+      {showAddMember && (
+        <AddMemberModal
+          projectId={projectId}
+          allUsers={allUsers}
+          existing={members.map(m=>m.id)}
+          onClose={()=>setShowAddMember(false)}
+          onSaved={load}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── TASK MODAL ─────────────────────────────────────────────────────────────────
+function TaskModal({ task, projectId, members, canAdmin, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    title: task?.title||'',
+    description: task?.description||'',
+    priority: task?.priority||'medium',
+    status: task?.status||'todo',
+    assigned_to: task?.assigned_to||'',
+    due_date: task?.due_date||'',
+  });
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const h = (k) => (e) => setForm(f=>({...f,[k]:e.target.value}));
+
+  const save = async () => {
+    if (!form.title.trim()) { setErr('Title required'); return; }
+    setSaving(true); setErr('');
+    try {
+      const body = {...form, assigned_to: form.assigned_to||null, due_date: form.due_date||null};
+      if (task) await API.put(`/projects/${projectId}/tasks/${task.id}`, body);
+      else await API.post(`/projects/${projectId}/tasks`, body);
+      onSaved(); onClose();
+    } catch(e) { setErr(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-lg">
+        <h3>{task?'Edit Task':'New Task'}</h3>
+        {err && <div className="alert alert-error">{err}</div>}
+        <div className="form-group">
+          <label>Title *</label>
+          <input value={form.title} onChange={h('title')} placeholder="Task title" autoFocus/>
+        </div>
+        <div className="form-group">
+          <label>Description</label>
+          <textarea value={form.description} onChange={h('description')} rows={3} placeholder="Optional description"/>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Priority</label>
+            <select value={form.priority} onChange={h('priority')}>
+              {PRIORITIES.map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Status</label>
+            <select value={form.status} onChange={h('status')}>
+              {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Assign To</label>
+            <select value={form.assigned_to} onChange={h('assigned_to')}>
+              <option value="">Unassigned</option>
+              {members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Due Date</label>
+            <input type="date" value={form.due_date} onChange={h('due_date')}/>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={save} disabled={saving}>
+            {saving?'Saving...':task?'Save Changes':'Create Task'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ADD MEMBER MODAL ───────────────────────────────────────────────────────────
+function AddMemberModal({ projectId, allUsers, existing, onClose, onSaved }) {
+  const [userId, setUserId] = useState('');
+  const [role, setRole] = useState('member');
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const available = allUsers.filter(u => !existing.includes(u.id));
+
+  const add = async () => {
+    if (!userId) { setErr('Select a user'); return; }
+    setSaving(true); setErr('');
+    try {
+      await API.post(`/projects/${projectId}/members`, { userId, role });
+      onSaved(); onClose();
+    } catch(e) { setErr(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <h3>Add Team Member</h3>
+        {err && <div className="alert alert-error">{err}</div>}
+        <div className="form-group">
+          <label>User</label>
+          <select value={userId} onChange={e=>setUserId(e.target.value)}>
+            <option value="">Select user...</option>
+            {available.map(u=><option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Project Role</label>
+          <select value={role} onChange={e=>setRole(e.target.value)}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={add} disabled={saving || !available.length}>
+            {saving?'Adding...':'Add Member'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MY TASKS ───────────────────────────────────────────────────────────────────
+function MyTasks({ user }) {
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    Promise.all([API.get('/projects')]).then(([ps]) => {
+      setProjects(ps);
+      Promise.all(ps.map(p=>API.get(`/projects/${p.id}/tasks`))).then(all => {
+        const myTasks = all.flat().filter(t => t.assigned_to === user.id || t.created_by === user.id);
+        const withProject = myTasks.map(t => ({...t, project_name: ps.find(p=>p.id===t.project_id)?.name}));
+        setTasks(withProject);
+        setLoading(false);
+      });
+    });
+  }, [user.id]);
+
+  const filtered = filter==='all' ? tasks : filter==='overdue' ? tasks.filter(t=>isOverdue(t.due_date,t.status)) : tasks.filter(t=>t.status===filter);
+
+  if (loading) return <div className="loading"><div className="spinner"/></div>;
+
+  return (
+    <div className="content">
+      <div className="status-filter">
+        {[
+          {id:'all',label:`All (${tasks.length})`},
+          ...STATUSES.map(s=>({id:s,label:`${STATUS_LABELS[s]} (${tasks.filter(t=>t.status===s).length})`})),
+          {id:'overdue',label:`⚠️ Overdue (${tasks.filter(t=>isOverdue(t.due_date,t.status)).length})`},
+        ].map(f=>(
+          <button key={f.id} className={`filter-btn ${filter===f.id?'active':''}`} onClick={()=>setFilter(f.id)}>{f.label}</button>
+        ))}
+      </div>
+
+      {filtered.length === 0
+        ? <div className="empty-state"><span className="icon">✅</span><h3>No tasks here</h3></div>
+        : filtered.map(task => (
+            <div key={task.id} className="task-item" style={{cursor:'default'}}>
+              <div className={`task-check ${task.status==='done'?'done':task.status==='in_progress'?'in_progress':''}`}>
+                {task.status==='done' && '✓'}
+              </div>
+              <div className="task-info">
+                <div className={`task-title ${task.status==='done'?'done':''}`}>{task.title}</div>
+                <div className="task-sub">
+                  📁 {task.project_name}
+                  {task.due_date && <span className={isOverdue(task.due_date,task.status)?'overdue':''}> · 📅 {fmtDate(task.due_date)}</span>}
+                </div>
+              </div>
+              <div className="task-meta">
+                <span className={`chip chip-${task.priority}`}>{task.priority}</span>
+                <span className={`chip chip-${task.status}`}>{STATUS_LABELS[task.status]}</span>
+              </div>
+            </div>
+          ))
+      }
+    </div>
+  );
+}
+
+// ── USERS ADMIN ────────────────────────────────────────────────────────────────
+function UsersAdmin({ user }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { API.get('/users').then(u=>{setUsers(u);setLoading(false);}); }, []);
+
+  const toggleRole = async (u) => {
+    const newRole = u.role === 'admin' ? 'member' : 'admin';
+    if (!confirm(`Change ${u.name}'s role to ${newRole}?`)) return;
+    await API.patch(`/users/${u.id}/role`, { role: newRole });
+    setUsers(us => us.map(x => x.id===u.id ? {...x, role:newRole} : x));
+  };
+
+  if (loading) return <div className="loading"><div className="spinner"/></div>;
+
+  return (
+    <div className="content">
+      <div className="card">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div className="user-avatar" style={{width:'32px',height:'32px',fontSize:'12px'}}>{initials(u.name)}</div>
+                      <span style={{fontWeight:600}}>{u.name}</span>
+                    </div>
+                  </td>
+                  <td style={{color:'var(--text2)'}}>{u.email}</td>
+                  <td><span className={`chip chip-${u.role}`}>{u.role}</span></td>
+                  <td style={{color:'var(--text3)',fontSize:'12px'}}>{fmtDate(u.created_at)}</td>
+                  <td>
+                    {u.id !== user.id && (
+                      <button className="btn btn-secondary btn-sm" onClick={()=>toggleRole(u)}>
+                        → {u.role==='admin'?'Member':'Admin'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── APP ROOT ───────────────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState('dashboard');
+  const [projects, setProjects] = useState([]);
+  const [projLoading, setProjLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const loadProjects = useCallback(async () => {
+    setProjLoading(true);
+    try { const ps = await API.get('/projects'); setProjects(ps); }
+    catch {} setProjLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('tf_token');
+    if (token) {
+      API.get('/auth/me').then(u => { setUser(u); setAuthChecked(true); }).catch(() => { localStorage.removeItem('tf_token'); setAuthChecked(true); });
+    } else setAuthChecked(true);
+  }, []);
+
+  useEffect(() => { if (user) loadProjects(); }, [user]);
+
+  const logout = () => { localStorage.removeItem('tf_token'); setUser(null); setPage('dashboard'); };
+  const handleLogin = (u) => setUser(u);
+
+  const getTitle = () => {
+    if (page === 'dashboard') return { title: 'Dashboard', sub: `Welcome back, ${user?.name?.split(' ')[0]}!` };
+    if (page === 'projects') return { title: 'Projects', sub: 'All your projects' };
+    if (page === 'my-tasks') return { title: 'My Tasks', sub: 'Tasks assigned to you' };
+    if (page === 'users') return { title: 'User Management', sub: 'Manage team roles' };
+    if (page.startsWith('project:')) {
+      const p = projects.find(x=>x.id===page.split(':')[1]);
+      return { title: p?.name||'Project', sub: 'Project details' };
+    }
+    return { title: 'TaskFlow', sub: '' };
+  };
+
+  if (!authChecked) return <div className="loading" style={{minHeight:'100vh'}}><div className="spinner"/></div>;
+  if (!user) return <AuthPage onLogin={handleLogin}/>;
+
+  const { title, sub } = getTitle();
+
+  return (
+    <AppCtx.Provider value={{ reloadProjects: loadProjects }}>
+      <div id="app">
+        <Sidebar page={page} setPage={setPage} user={user} projects={projects} logout={logout}/>
+        <div className="main">
+          <div className="topbar">
+            <div>
+              <h2>{title}</h2>
+              {sub && <div className="sub">{sub}</div>}
+            </div>
+          </div>
+          {page === 'dashboard' && <Dashboard user={user}/>}
+          {page === 'projects' && <ProjectsList user={user} setPage={setPage} projects={projects} loading={projLoading} refreshProjects={loadProjects}/>}
+          {page === 'my-tasks' && <MyTasks user={user}/>}
+          {page === 'users' && user.role==='admin' && <UsersAdmin user={user}/>}
+          {page.startsWith('project:') && <ProjectDetail projectId={page.split(':')[1]} user={user} setPage={setPage}/>}
+        </div>
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>
