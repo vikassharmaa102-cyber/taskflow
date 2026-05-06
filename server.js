@@ -44,23 +44,5 @@ initDb()
     console.error('Failed to init database:', err);
     process.exit(1);
   });
-```
-
-After pasting:
-
-1. Save `server.js`
-2. Commit changes on GitHub
-3. Wait for Railway redeploy
-4. Open:
-
-```txt
-https://YOUR-DOMAIN.up.railway.app/health
-```
-
-You should see:
-
-```txt
-Server working
-```
 
 
