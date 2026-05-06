@@ -419,17 +419,12 @@ app.get('/api/dashboard', auth, (req, res) => {
   res.json(stats);
 });
 
+// Health check route
+app.get('/health', (req, res) => {
+  res.send('Server working');
+});
+
 // Serve React app
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ─── START ────────────────────────────────────────────────────────────────────
-initDb().then(() => {
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ TaskFlow running on http://localhost:${PORT}`);
-  });
-}).catch(err => {
-  console.error('Failed to init database:', err);
-  process.exit(1);
 });
