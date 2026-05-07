@@ -426,7 +426,7 @@ app.get('*', (req, res) => {
 
 // ─── START ────────────────────────────────────────────────────────────────────
 initDb().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ TaskFlow running on http://localhost:${PORT}`);
   });
 }).catch(err => {
